@@ -1,0 +1,65 @@
+<%- include('partials/header') %>
+<section class="panel">
+  <h1>Administration</h1>
+  <h2>Parametres taux et adresses</h2>
+  <form method="POST" action="/admin/settings" class="form-grid">
+    <label>Taux achat FCFA
+      <input type="number" name="buyRate" value="<%= settings.buyRate %>" required />
+    </label>
+    <label>Taux vente FCFA
+      <input type="number" name="sellRate" value="<%= settings.sellRate %>" required />
+    </label>
+    <label>Numero de paiement
+      <input type="text" name="phoneNumber" value="<%= settings.phoneNumber %>" required />
+    </label>
+    <label>Nom beneficiaire
+      <input type="text" name="recipientName" value="<%= settings.recipientName %>" required />
+    </label>
+    <% cryptos.forEach((crypto) => { (cryptoNetworks[crypto] || []).forEach((network) => { %>
+      <label><%= crypto %> - <%= network %>
+        <input type="text" name="addr_<%= crypto %>_<%= network %>" value="<%= ((settings.depositAddresses || {})[crypto] || {})[network] || '' %>" />
+      </label>
+    <% }) }) %>
+
+    <button class="btn" type="submit">Mettre a jour</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Transactions</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>User</th><th>Type</th><th>Details</th><th>Montant</th><th>Statut</th><th>Preuve</th><th>Action</th></tr></thead>
+      <tbody>
+      <% if (!transactions.length) { %>
+        <tr><td colspan="8">Aucune transaction.</td></tr>
+      <% } %>
+      <% transactions.forEach((tx) => { %>
+        <tr>
+          <td><%= tx.id.slice(0, 8) %></td>
+          <td><%= tx.email %></td>
+          <td><%= tx.type %></td>
+          <td><%= tx.crypto %> / <%= tx.network %></td>
+          <td><%= (tx.usdAmount || 0).toLocaleString('fr-FR') %> USD -> <%= (tx.amountFCFA || 0).toLocaleString('fr-FR') %> FCFA</td>
+          <td><span class="badge <%= tx.status %>"><%= tx.status %></span></td>
+          <td>
+            <% if (tx.proofPath) { %>
+              <a href="<%= tx.proofPath %>" target="_blank">Voir</a>
+            <% } else if (tx.proofFileName) { %>
+              Envoyee par mail/Telegram (<%= tx.proofFileName %>)
+            <% } %>
+          </td>
+          <td>
+            <% if (tx.status !== 'approved') { %>
+              <form method="POST" action="/admin/transactions/<%= tx.id %>/approve">
+                <button class="btn small" type="submit">Valider</button>
+              </form>
+            <% } %>
+          </td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+<%- include('partials/footer') %>

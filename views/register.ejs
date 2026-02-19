@@ -1,0 +1,21 @@
+<%- include('partials/header') %>
+<section class="panel auth-box">
+  <h1>Inscription</h1>
+  <% if (error) { %><p class="error"><%= error %></p><% } %>
+  <form method="POST" action="/auth/register" class="form-grid">
+    <label>Nom complet
+      <input type="text" name="fullName" required />
+    </label>
+    <label>Email
+      <input type="email" name="email" required />
+    </label>
+    <label>Telephone
+      <input type="text" name="phone" required />
+    </label>
+    <label>Mot de passe
+      <input type="password" name="password" minlength="8" required />
+    </label>
+    <button class="btn" type="submit">Creer mon compte</button>
+  </form>
+</section>
+<%- include('partials/footer') %>

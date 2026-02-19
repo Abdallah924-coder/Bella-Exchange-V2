@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: bella-exchange
+    runtime: node
+    plan: starter
+    rootDir: .
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000

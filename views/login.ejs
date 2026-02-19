@@ -1,0 +1,18 @@
+<%- include('partials/header') %>
+<section class="panel auth-box">
+  <h1>Connexion</h1>
+  <% if (success) { %><p class="ok"><%= success %></p><% } %>
+  <% if (error) { %><p class="error"><%= error %></p><% } %>
+  <form method="POST" action="/auth/login" class="form-grid">
+    <label>Email
+      <input type="email" name="email" required />
+    </label>
+    <label>Mot de passe
+      <input type="password" name="password" required />
+    </label>
+    <button class="btn" type="submit">Se connecter</button>
+  </form>
+  <p><a href="/forgot-password">Mot de passe oublie ?</a></p>
+  <p>Pas encore de compte ? <a href="/register">Inscription</a></p>
+</section>
+<%- include('partials/footer') %>

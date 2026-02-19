@@ -1,0 +1,19 @@
+<%- include('partials/header') %>
+<section class="panel">
+  <h1>Contact</h1>
+  <% if (String((typeof query !== 'undefined' && query.ok) || '') === '1') { %><p class="ok">Message envoye.</p><% } %>
+  <p>Besoin d'assistance ou d'informations commerciales ? Ecrivez-nous.</p>
+  <form method="POST" action="/contact" class="form-grid">
+    <label>Nom
+      <input type="text" name="name" required />
+    </label>
+    <label>Email
+      <input type="email" name="email" required />
+    </label>
+    <label>Message
+      <textarea name="message" rows="5" required></textarea>
+    </label>
+    <button class="btn" type="submit">Envoyer</button>
+  </form>
+</section>
+<%- include('partials/footer') %>

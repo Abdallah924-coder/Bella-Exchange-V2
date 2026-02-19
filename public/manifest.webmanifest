@@ -1,0 +1,17 @@
+{
+  "name": "Bella Exchange",
+  "short_name": "BellaEx",
+  "description": "Plateforme d'echange crypto en Republique du Congo",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f9ff",
+  "theme_color": "#0057ff",
+  "icons": [
+    {
+      "src": "/public/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+<%- include('partials/header') %>
+<section class="panel">
+  <h1>Vente de cryptomonnaie</h1>
+  <p>Taux de vente actuel: <strong><%= settings.sellRate %> FCFA</strong></p>
+  <% if (error) { %><p class="error"><%= error %></p><% } %>
+
+  <form method="POST" action="/transactions/sell" enctype="multipart/form-data" class="form-grid" id="sellForm">
+    <label>Numero de telephone
+      <input type="text" name="phone" required />
+    </label>
+    <label>Nom complet
+      <input type="text" name="senderName" required />
+    </label>
+    <label>Crypto
+      <select name="crypto" id="cryptoSelect" required>
+        <% cryptos.forEach((c) => { %><option value="<%= c %>"><%= c %></option><% }) %>
+      </select>
+    </label>
+    <label>Reseau
+      <select name="network" id="networkSelect" required>
+        <% networks.forEach((n) => { %><option value="<%= n %>"><%= n %></option><% }) %>
+      </select>
+    </label>
+    <label>Montant en USD
+      <input type="number" id="sellUsdAmount" name="usdAmount" min="1" step="0.01" required />
+    </label>
+    <label>Montant a recevoir (FCFA)
+      <input type="text" id="sellFcfaAmount" readonly placeholder="Calcul automatique" />
+    </label>
+    <label>Adresse de depot generee
+      <input type="text" id="depositAddress" readonly />
+    </label>
+    <label>Capture de transfert
+      <input type="file" name="proof" accept="image/*,.pdf" required />
+    </label>
+    <button class="btn" type="submit">Soumettre la vente</button>
+  </form>
+</section>
+<script>
+  const sellRate = Number(<%= settings.sellRate %>);
+  const cryptoNetworks = <%- JSON.stringify(cryptoNetworks) %>;
+
+  function updateSellEstimate() {
+    const usd = Number(document.getElementById('sellUsdAmount').value || 0);
+    const target = document.getElementById('sellFcfaAmount');
+    target.value = usd > 0 ? `${Math.round(usd * sellRate).toLocaleString('fr-FR')} FCFA` : '';
+  }
+
+  async function loadAddress() {
+    const crypto = document.getElementById('cryptoSelect').value;
+    const network = document.getElementById('networkSelect').value;
+    const res = await fetch(`/api/deposit-address?crypto=${crypto}&network=${network}`);
+    const data = await res.json();
+    document.getElementById('depositAddress').value = data.address || data.error || 'Adresse non configuree';
+  }
+
+  function populateNetworks() {
+    const crypto = document.getElementById('cryptoSelect').value;
+    const networkSelect = document.getElementById('networkSelect');
+    const networks = cryptoNetworks[crypto] || [];
+    networkSelect.innerHTML = '';
+    networks.forEach((network) => {
+      const opt = document.createElement('option');
+      opt.value = network;
+      opt.textContent = network;
+      networkSelect.appendChild(opt);
+    });
+  }
+
+  document.getElementById('cryptoSelect').addEventListener('change', function () {
+    populateNetworks();
+    loadAddress();
+  });
+  document.getElementById('networkSelect').addEventListener('change', loadAddress);
+  document.getElementById('sellUsdAmount').addEventListener('input', updateSellEstimate);
+  populateNetworks();
+  loadAddress();
+  updateSellEstimate();
+</script>
+<%- include('partials/footer') %>

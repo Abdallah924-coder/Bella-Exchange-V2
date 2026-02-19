@@ -1,0 +1,66 @@
+<%- include('partials/header') %>
+<section class="hero">
+  <div>
+    <span class="tag">Echange crypto rapide au Congo</span>
+    <h1>Convertissez vos cryptos en FCFA avec un service local fiable.</h1>
+    <p>Plateforme basee en Republique du Congo. Achat et vente de cryptomonnaies avec validation manuelle securisee.</p>
+    <div class="actions">
+      <a href="/buy" class="btn">Acheter</a>
+      <a href="/sell" class="btn ghost">Vendre</a>
+    </div>
+  </div>
+  <div class="rate-card">
+    <h3>Taux officiels</h3>
+    <p>Achat: <strong><%= settings.buyRate %> FCFA</strong></p>
+    <p>Vente: <strong><%= settings.sellRate %> FCFA</strong></p>
+    <p>Paiement mobile: <strong><%= settings.phoneNumber %></strong></p>
+    <p>Nom: <strong><%= settings.recipientName %></strong></p>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>Prix de reference (10 cryptos)</h2>
+    <button class="btn small ghost" id="refreshPricesBtn" type="button">Actualiser</button>
+  </div>
+  <p class="muted" id="priceTimestamp">Chargement des prix live...</p>
+  <div class="prices-grid" id="pricesGrid">
+    <% prices.forEach((p) => { %>
+      <article class="price-item" data-symbol="<%= p.symbol %>">
+        <h3><%= p.symbol %></h3>
+        <p>$<span class="price-value"><%= Number(p.value).toLocaleString() %></span></p>
+      </article>
+    <% }) %>
+  </div>
+</section>
+
+<section class="features">
+  <article><h3>Execution locale</h3><p>Equipe basee au Congo pour un suivi direct.</p></article>
+  <article><h3>Validation manuelle</h3><p>Toutes les transactions sont verifiees avant confirmation.</p></article>
+  <article><h3>Trafic securise</h3><p>Comptes utilisateurs, historique et espace admin dedie.</p></article>
+</section>
+<script>
+  (function () {
+    const timestampEl = document.getElementById('priceTimestamp');
+    const refreshBtn = document.getElementById('refreshPricesBtn');
+    const cardEls = Array.from(document.querySelectorAll('.price-item'));
+
+    async function loadPrices() {
+      timestampEl.textContent = 'Mise a jour des prix en cours...';
+      const res = await fetch('/api/prices');
+      const data = await res.json();
+      cardEls.forEach((card) => {
+        const symbol = card.getAttribute('data-symbol');
+        const value = data.prices?.[symbol];
+        if (typeof value === 'number') {
+          card.querySelector('.price-value').textContent = value.toLocaleString('fr-FR');
+        }
+      });
+      timestampEl.textContent = `Derniere mise a jour: ${new Date(data.updatedAt).toLocaleString('fr-FR')}`;
+    }
+
+    refreshBtn.addEventListener('click', loadPrices);
+    loadPrices();
+  })();
+</script>
+<%- include('partials/footer') %>

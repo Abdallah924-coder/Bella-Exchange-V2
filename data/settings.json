@@ -1,0 +1,54 @@
+{
+  "buyRate": 635,
+  "sellRate": 590,
+  "phoneNumber": "06 668 94 48",
+  "recipientName": "Michy Magellan DEVOUE-LI-MBOUITY",
+  "prices": {
+    "BTC": 66515,
+    "ETH": 1948.65,
+    "BNB": 605.27,
+    "SOL": 80.86,
+    "POL": 0.95,
+    "USDT": 0.999576,
+    "USDC": 0.999883,
+    "TRON": 0.279892,
+    "XRP": 1.41,
+    "ADA": 0.2722
+  },
+  "depositAddresses": {
+    "BTC": {
+      "BTC": "1F7nZDdEw6AcEWRWG18LLDCiHggh3vYFoW"
+    },
+    "ETH": {
+      "ERC20": "0x90439961b090f8b51c28023e30213e318db227f3"
+    },
+    "BNB": {
+      "BEP20": "0x90439961b090f8b51c28023e30213e318db227f3"
+    },
+    "SOL": {
+      "SOL": "4rFEr619w8g96qFBd9DcrUjTDSFXbtCC3iDfANVEYPz5"
+    },
+    "POL": {
+      "POLYGON": "0x90439961b090f8b51c28023e30213e318db227f3"
+    },
+    "USDT": {
+      "ERC20": "0x90439961b090f8b51c28023e30213e318db227f3",
+      "TRC20": "TATtuLm5JBWHZvtACk2AJ2iqPGJRpnZ5Rt",
+      "BEP20": "0x90439961b090f8b51c28023e30213e318db227f3"
+    },
+    "USDC": {
+      "ERC20": "0x90439961b090f8b51c28023e30213e318db227f3",
+      "TRC20": "TATtuLm5JBWHZvtACk2AJ2iqPGJRpnZ5Rt",
+      "BEP20": "0x90439961b090f8b51c28023e30213e318db227f3"
+    },
+    "TRON": {
+      "TRC20": "TATtuLm5JBWHZvtACk2AJ2iqPGJRpnZ5Rt"
+    },
+    "XRP": {
+      "ERC20": "rNxp4h8apvRis6mJf9Sh8C6iRxfrDWN7AV"
+    },
+    "ADA": {
+      "ERC20": "addr1vydyaf6zcg98yujwqutdgla4x64kr854nz6q67dvzk2t7hc2ancw5"
+    }
+  }
+}

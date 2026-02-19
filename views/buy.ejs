@@ -1,0 +1,82 @@
+<%- include('partials/header') %>
+<section class="panel">
+  <h1>Achat de cryptomonnaie</h1>
+  <p>Taux d'achat actuel: <strong><%= settings.buyRate %> FCFA</strong></p>
+  <% if (error) { %><p class="error"><%= error %></p><% } %>
+
+  <form method="POST" action="/transactions/buy" enctype="multipart/form-data" class="form-grid" id="buyForm">
+    <label>Email
+      <input type="email" name="email" value="<%= currentUser.email %>" required />
+    </label>
+    <label>Crypto
+      <select name="crypto" required>
+        <% cryptos.forEach((c) => { %><option value="<%= c %>"><%= c %></option><% }) %>
+      </select>
+    </label>
+    <label>Reseau
+      <select name="network" id="buyNetworkSelect" required>
+      </select>
+    </label>
+    <label>Montant en USD
+      <input type="number" id="buyUsdAmount" name="usdAmount" min="1" step="0.01" required />
+    </label>
+    <label>Montant a envoyer (FCFA)
+      <input type="text" id="buyFcfaAmount" readonly placeholder="Calcul automatique" />
+    </label>
+    <label>Votre adresse crypto
+      <input type="text" name="cryptoAddress" required />
+    </label>
+    <label>Capture de paiement
+      <input type="file" name="proof" accept="image/*,.pdf" required />
+    </label>
+    <button class="btn" type="submit">Soumettre l'achat</button>
+  </form>
+
+  <div class="payment-card hidden" id="paymentDetails">
+    <h3>Details de paiement</h3>
+    <p>Numero: <strong><%= settings.phoneNumber %></strong></p>
+    <p>Nom beneficiaire: <strong><%= settings.recipientName %></strong></p>
+    <p>Le numero apparait apres saisie du montant en USD.</p>
+  </div>
+</section>
+<script>
+  (function () {
+    const rate = Number(<%= settings.buyRate %>);
+    const cryptoNetworks = <%- JSON.stringify(cryptoNetworks) %>;
+    const usdInput = document.getElementById('buyUsdAmount');
+    const fcfaField = document.getElementById('buyFcfaAmount');
+    const paymentDetails = document.getElementById('paymentDetails');
+    const cryptoSelect = document.querySelector('select[name="crypto"]');
+    const networkSelect = document.getElementById('buyNetworkSelect');
+
+    function populateNetworks() {
+      const crypto = cryptoSelect.value;
+      const networks = cryptoNetworks[crypto] || [];
+      networkSelect.innerHTML = '';
+      networks.forEach((n) => {
+        const option = document.createElement('option');
+        option.value = n;
+        option.textContent = n;
+        networkSelect.appendChild(option);
+      });
+    }
+
+    function update() {
+      const usd = Number(usdInput.value || 0);
+      if (usd > 0) {
+        const total = Math.round(usd * rate);
+        fcfaField.value = total.toLocaleString('fr-FR') + ' FCFA';
+        paymentDetails.classList.remove('hidden');
+      } else {
+        fcfaField.value = '';
+        paymentDetails.classList.add('hidden');
+      }
+    }
+
+    usdInput.addEventListener('input', update);
+    cryptoSelect.addEventListener('change', populateNetworks);
+    populateNetworks();
+    update();
+  })();
+</script>
+<%- include('partials/footer') %>

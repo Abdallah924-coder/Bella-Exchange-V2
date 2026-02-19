@@ -1,0 +1,32 @@
+<%- include('partials/header') %>
+<section class="panel">
+  <h1>Profil utilisateur</h1>
+  <div class="profile-box">
+    <p><strong>Nom:</strong> <%= currentUser.fullName %></p>
+    <p><strong>Email:</strong> <%= currentUser.email %></p>
+    <p><strong>Telephone:</strong> <%= currentUser.phone %></p>
+  </div>
+
+  <h2>Transactions recentes</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Type</th><th>Crypto</th><th>Montant</th><th>Statut</th><th>Date</th></tr></thead>
+      <tbody>
+      <% if (!transactions.length) { %>
+        <tr><td colspan="6">Aucune transaction.</td></tr>
+      <% } %>
+      <% transactions.forEach((tx) => { %>
+        <tr>
+          <td><%= tx.id.slice(0, 8) %></td>
+          <td><%= tx.type %></td>
+          <td><%= tx.crypto %> / <%= tx.network %></td>
+          <td><%= (tx.usdAmount || 0).toLocaleString('fr-FR') %> USD -> <%= (tx.amountFCFA || 0).toLocaleString('fr-FR') %> FCFA</td>
+          <td><span class="badge <%= tx.status %>"><%= tx.status %></span></td>
+          <td><%= new Date(tx.createdAt).toLocaleString('fr-FR') %></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+<%- include('partials/footer') %>
