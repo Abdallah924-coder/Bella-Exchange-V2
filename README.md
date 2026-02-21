@@ -76,7 +76,17 @@ Depuis la page `Admin`, tu peux renseigner les adresses de depot par crypto/rese
 4. Ajoute toutes les variables de `.env` dans `Environment`.
 5. Deploie.
 
-## Stockage local (JSON)
+## Base de donnees (PostgreSQL recommande en production)
+
+Pour la production, configure `DATABASE_URL` (Render Postgres).  
+Quand `DATABASE_URL` est defini, l'application stocke les donnees en PostgreSQL.
+
+- `DATABASE_URL` : URL complete de connexion Postgres
+- `DATABASE_SSL` : `false` (Render interne) ou `true` selon ton provider
+
+Si `DATABASE_URL` est vide, l'application utilise les fichiers JSON locaux.
+
+## Stockage local (JSON, mode fallback)
 
 - Utilisateurs: `data/users.json`
 - Transactions: `data/transactions.json`

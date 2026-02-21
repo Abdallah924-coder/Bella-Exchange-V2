@@ -5,7 +5,7 @@ const multer = require('multer');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
-const { readJSON, writeJSON, ensureFile } = require('./db');
+const { readJSON, writeJSON, ensureFile, initializeDataStore } = require('./db');
 const { sendEmail } = require('./mailer');
 const { sendTelegramMessage, sendTelegramProof } = require('./telegram');
 require('dotenv').config();
@@ -805,8 +805,14 @@ app.post('/admin/settings', adminRequired, (req, res) => {
   res.redirect('/admin');
 });
 
-bootstrapAdmin().then(() => {
-  app.listen(port, () => {
-    console.log(`Bella Exchange lance sur http://localhost:${port}`);
+initializeDataStore()
+  .then(() => bootstrapAdmin())
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`Bella Exchange lance sur http://localhost:${port}`);
+    });
+  })
+  .catch((err) => {
+    console.error('[STARTUP ERROR]', err?.message || err);
+    process.exit(1);
   });
-});
