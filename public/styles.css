@@ -202,6 +202,12 @@ input, select, textarea {
   font: inherit;
   color: var(--text);
   background: color-mix(in oklab, var(--surface) 90%, transparent);
+  width: 100%;
+  min-width: 0;
+}
+input[type="file"] {
+  max-width: 100%;
+  overflow: hidden;
 }
 .btn {
   border: 0;
@@ -250,4 +256,31 @@ th, td { border-bottom: 1px solid var(--border); padding: .65rem; text-align: le
   .features { grid-template-columns: 1fr; }
   .site-header { flex-direction: column; align-items: flex-start; }
   main { width: min(1100px, 92%); }
+}
+
+@media (max-width: 700px) {
+  main {
+    width: 94%;
+    margin: 1rem auto 2rem;
+  }
+  .panel {
+    padding: 1rem;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .table-wrap {
+    -webkit-overflow-scrolling: touch;
+  }
+  table {
+    min-width: 680px;
+  }
+  th, td {
+    white-space: nowrap;
+    font-size: .88rem;
+    padding: .55rem;
+  }
+  .profile-box p {
+    overflow-wrap: anywhere;
+  }
 }
