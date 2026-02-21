@@ -12,6 +12,11 @@ require('dotenv').config();
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction) {
+  app.set('trust proxy', 1);
+}
 
 const uploadDir = path.join(__dirname, '..', 'uploads');
 const fs = require('fs');
@@ -234,10 +239,17 @@ app.set('views', path.join(__dirname, '..', 'views'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(session({
+  name: 'bella.sid',
   secret: process.env.SESSION_SECRET || 'bella_exchange_secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 1000 * 60 * 60 * 24 }
+  proxy: isProduction,
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isProduction,
+    maxAge: 1000 * 60 * 60 * 24
+  }
 }));
 app.use('/public', express.static(path.join(__dirname, '..', 'public')));
 app.use('/uploads', express.static(uploadDir));
@@ -373,7 +385,9 @@ app.post('/auth/register', async (req, res) => {
   writeJSON('users.json', users);
 
   req.session.user = { id: user.id, email: user.email, fullName: user.fullName, role: user.role, phone: user.phone };
-  res.redirect('/profile');
+  req.session.save(() => {
+    res.redirect('/profile');
+  });
 });
 
 app.post('/auth/login', async (req, res) => {
@@ -409,7 +423,9 @@ app.post('/auth/login', async (req, res) => {
     role: effectiveRole,
     phone: user.phone
   };
-  res.redirect(effectiveRole === 'admin' ? '/admin' : '/profile');
+  req.session.save(() => {
+    res.redirect(effectiveRole === 'admin' ? '/admin' : '/profile');
+  });
 });
 
 app.post('/auth/forgot-password', async (req, res) => {
