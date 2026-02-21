@@ -317,4 +317,41 @@ th, td { border-bottom: 1px solid var(--border); padding: .65rem; text-align: le
     color: var(--muted);
     font-weight: 700;
   }
+  .admin-table {
+    min-width: 0;
+  }
+  .admin-table thead {
+    display: none;
+  }
+  .admin-table tbody,
+  .admin-table tr,
+  .admin-table td {
+    display: block;
+    width: 100%;
+  }
+  .admin-table tr {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: .55rem .65rem;
+    margin-bottom: .65rem;
+    background: color-mix(in oklab, var(--surface) 96%, transparent);
+  }
+  .admin-table td {
+    border: 0;
+    padding: .25rem 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    gap: .5rem;
+    align-items: start;
+  }
+  .admin-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-weight: 700;
+  }
+  .admin-table td[data-label="Action"] form {
+    margin: 0;
+  }
 }

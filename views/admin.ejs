@@ -28,7 +28,7 @@
 <section class="panel">
   <h2>Transactions</h2>
   <div class="table-wrap">
-    <table>
+    <table class="admin-table">
       <thead><tr><th>ID</th><th>User</th><th>Type</th><th>Details</th><th>Montant</th><th>Statut</th><th>Preuve</th><th>Action</th></tr></thead>
       <tbody>
       <% if (!transactions.length) { %>
@@ -36,20 +36,20 @@
       <% } %>
       <% transactions.forEach((tx) => { %>
         <tr>
-          <td><%= tx.id.slice(0, 8) %></td>
-          <td><%= tx.email %></td>
-          <td><%= tx.type %></td>
-          <td><%= tx.crypto %> / <%= tx.network %></td>
-          <td><%= (tx.usdAmount || 0).toLocaleString('fr-FR') %> USD -> <%= (tx.amountFCFA || 0).toLocaleString('fr-FR') %> FCFA</td>
-          <td><span class="badge <%= tx.status %>"><%= tx.status %></span></td>
-          <td>
+          <td data-label="ID"><%= tx.id.slice(0, 8) %></td>
+          <td data-label="User"><%= tx.email %></td>
+          <td data-label="Type"><%= tx.type %></td>
+          <td data-label="Details"><%= tx.crypto %> / <%= tx.network %></td>
+          <td data-label="Montant"><%= (tx.usdAmount || 0).toLocaleString('fr-FR') %> USD -> <%= (tx.amountFCFA || 0).toLocaleString('fr-FR') %> FCFA</td>
+          <td data-label="Statut"><span class="badge <%= tx.status %>"><%= tx.status %></span></td>
+          <td data-label="Preuve">
             <% if (tx.proofPath) { %>
               <a href="<%= tx.proofPath %>" target="_blank">Voir</a>
             <% } else if (tx.proofFileName) { %>
               Envoyee par mail/Telegram (<%= tx.proofFileName %>)
             <% } %>
           </td>
-          <td>
+          <td data-label="Action">
             <% if (tx.status !== 'approved') { %>
               <form method="POST" action="/admin/transactions/<%= tx.id %>/approve">
                 <button class="btn small" type="submit">Valider</button>
