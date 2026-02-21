@@ -283,4 +283,38 @@ th, td { border-bottom: 1px solid var(--border); padding: .65rem; text-align: le
   .profile-box p {
     overflow-wrap: anywhere;
   }
+  .profile-table {
+    min-width: 0;
+  }
+  .profile-table thead {
+    display: none;
+  }
+  .profile-table tbody,
+  .profile-table tr,
+  .profile-table td {
+    display: block;
+    width: 100%;
+  }
+  .profile-table tr {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: .55rem .65rem;
+    margin-bottom: .65rem;
+    background: color-mix(in oklab, var(--surface) 96%, transparent);
+  }
+  .profile-table td {
+    border: 0;
+    padding: .25rem 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    gap: .5rem;
+    align-items: start;
+  }
+  .profile-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-weight: 700;
+  }
 }
