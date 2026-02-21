@@ -161,6 +161,19 @@ function getSettings() {
   return readJSON('settings.json', {});
 }
 
+function runInBackground(taskFactories, context) {
+  Promise.allSettled(taskFactories.map((task) => task()))
+    .then((results) => {
+      const failed = results.filter((r) => r.status === 'rejected');
+      if (failed.length) {
+        console.error(`[NOTIFY ERROR] ${context}: ${failed.length} task(s) failed`);
+      }
+    })
+    .catch((err) => {
+      console.error('[NOTIFY ERROR]', context, err?.message || err);
+    });
+}
+
 async function refreshLivePrices() {
   const now = Date.now();
   if (pricesCache.updatedAt && now - pricesCache.updatedAt < PRICE_REFRESH_MS && pricesCache.prices) {
@@ -452,14 +465,16 @@ app.post('/auth/forgot-password', async (req, res) => {
     const resetUrl = new URL('reset-password', baseUrl);
     resetUrl.searchParams.set('token', token);
     const resetLink = resetUrl.toString();
-    await sendEmail({
-      to: user.email,
-      subject: 'Bella Exchange - Reinitialisation mot de passe',
-      text:
-        `Bonjour ${user.fullName || ''},\n` +
-        `Cliquez sur ce lien pour reinitialiser votre mot de passe:\n${resetLink}\n` +
-        `Ce lien expire dans 30 minutes.`
-    });
+    runInBackground([
+      () => sendEmail({
+        to: user.email,
+        subject: 'Bella Exchange - Reinitialisation mot de passe',
+        text:
+          `Bonjour ${user.fullName || ''},\n` +
+          `Cliquez sur ce lien pour reinitialiser votre mot de passe:\n${resetLink}\n` +
+          `Ce lien expire dans 30 minutes.`
+      })
+    ], `forgot-password:${user.email}`);
   }
 
   return res.redirect('/forgot-password?success=Si+le+compte+existe,+un+email+a+ete+envoye.');
@@ -595,53 +610,54 @@ app.post('/transactions/buy', authRequired, upload.single('proof'), async (req, 
   transactions.push(tx);
   writeJSON('transactions.json', transactions);
 
-  await sendEmail({
-    to: tx.email,
-    subject: 'Bella Exchange - Transaction recue',
-    text:
-      `Votre transaction ${tx.id} (${usdAmount} USD / ${amountFCFA} FCFA) a ete prise en compte et est en attente de validation.\n` +
-      `Paiement a envoyer au: ${settings.phoneNumber}\n` +
-      `Nom beneficiaire: ${settings.recipientName}\n` +
-      `Adresse crypto de reception: ${tx.cryptoAddress}`
-  });
-  await sendEmail({
-    to: process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL || 'admin@bellaexchange.cg',
-    subject: `Nouvelle commande ACHAT ${tx.id}`,
-    text:
-      `Nouvelle commande ACHAT\n` +
-      `ID: ${tx.id}\n` +
-      `Client: ${tx.email}\n` +
-      `Telephone client: ${tx.phone || '-'}\n` +
-      `Crypto: ${tx.crypto}/${tx.network}\n` +
-      `Montant: ${usdAmount} USD (${amountFCFA} FCFA)\n` +
-      `Adresse crypto client: ${tx.cryptoAddress || '-'}\n` +
-      `Numero de paiement: ${settings.phoneNumber}\n` +
-      `Nom beneficiaire: ${settings.recipientName}\n` +
-      `Preuve: ${tx.proofFileName || 'aucune'}`,
-    attachments: req.file ? [{
-      filename: req.file.originalname || `preuve-achat-${tx.id}`,
-      content: req.file.buffer,
-      contentType: req.file.mimetype || 'application/octet-stream'
-    }] : undefined
-  });
-  await sendTelegramMessage(
-    `🟢 <b>Nouvelle commande ACHAT</b>\n` +
-    `ID: <code>${escapeTelegramHtml(tx.id)}</code>\n` +
-    `Client: ${escapeTelegramHtml(tx.email)}\n` +
-    `Tel client: ${escapeTelegramHtml(tx.phone || '-')}\n` +
-    `Crypto: ${escapeTelegramHtml(tx.crypto)}/${escapeTelegramHtml(tx.network)}\n` +
-    `Montant: ${escapeTelegramHtml(usdAmount)} USD (${escapeTelegramHtml(amountFCFA)} FCFA)\n` +
-    `Adr. client: <code>${escapeTelegramHtml(tx.cryptoAddress || '-')}</code>\n` +
-    `Paiement: ${escapeTelegramHtml(settings.phoneNumber)} (${escapeTelegramHtml(settings.recipientName)})`
-  );
-  await sendTelegramProof({
-    fileBuffer: req.file?.buffer,
-    fileName: req.file?.originalname,
-    mimeType: req.file?.mimetype,
-    caption: `Preuve ACHAT ${tx.id}`
-  });
-
   res.redirect('/waiting');
+  runInBackground([
+    () => sendEmail({
+      to: tx.email,
+      subject: 'Bella Exchange - Transaction recue',
+      text:
+        `Votre transaction ${tx.id} (${usdAmount} USD / ${amountFCFA} FCFA) a ete prise en compte et est en attente de validation.\n` +
+        `Paiement a envoyer au: ${settings.phoneNumber}\n` +
+        `Nom beneficiaire: ${settings.recipientName}\n` +
+        `Adresse crypto de reception: ${tx.cryptoAddress}`
+    }),
+    () => sendEmail({
+      to: process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL || 'admin@bellaexchange.cg',
+      subject: `Nouvelle commande ACHAT ${tx.id}`,
+      text:
+        `Nouvelle commande ACHAT\n` +
+        `ID: ${tx.id}\n` +
+        `Client: ${tx.email}\n` +
+        `Telephone client: ${tx.phone || '-'}\n` +
+        `Crypto: ${tx.crypto}/${tx.network}\n` +
+        `Montant: ${usdAmount} USD (${amountFCFA} FCFA)\n` +
+        `Adresse crypto client: ${tx.cryptoAddress || '-'}\n` +
+        `Numero de paiement: ${settings.phoneNumber}\n` +
+        `Nom beneficiaire: ${settings.recipientName}\n` +
+        `Preuve: ${tx.proofFileName || 'aucune'}`,
+      attachments: req.file ? [{
+        filename: req.file.originalname || `preuve-achat-${tx.id}`,
+        content: req.file.buffer,
+        contentType: req.file.mimetype || 'application/octet-stream'
+      }] : undefined
+    }),
+    () => sendTelegramMessage(
+      `🟢 <b>Nouvelle commande ACHAT</b>\n` +
+      `ID: <code>${escapeTelegramHtml(tx.id)}</code>\n` +
+      `Client: ${escapeTelegramHtml(tx.email)}\n` +
+      `Tel client: ${escapeTelegramHtml(tx.phone || '-')}\n` +
+      `Crypto: ${escapeTelegramHtml(tx.crypto)}/${escapeTelegramHtml(tx.network)}\n` +
+      `Montant: ${escapeTelegramHtml(usdAmount)} USD (${escapeTelegramHtml(amountFCFA)} FCFA)\n` +
+      `Adr. client: <code>${escapeTelegramHtml(tx.cryptoAddress || '-')}</code>\n` +
+      `Paiement: ${escapeTelegramHtml(settings.phoneNumber)} (${escapeTelegramHtml(settings.recipientName)})`
+    ),
+    () => sendTelegramProof({
+      fileBuffer: req.file?.buffer,
+      fileName: req.file?.originalname,
+      mimeType: req.file?.mimetype,
+      caption: `Preuve ACHAT ${tx.id}`
+    })
+  ], `buy:${tx.id}`);
 });
 
 app.post('/transactions/sell', authRequired, upload.single('proof'), async (req, res) => {
@@ -689,51 +705,52 @@ app.post('/transactions/sell', authRequired, upload.single('proof'), async (req,
   transactions.push(tx);
   writeJSON('transactions.json', transactions);
 
-  await sendEmail({
-    to: tx.email,
-    subject: 'Bella Exchange - Vente en attente',
-    text:
-      `Votre ordre de vente ${tx.id} (${usdAmount} USD / ${amountFCFA} FCFA) a ete pris en compte et sera verifie par l'administration.\n` +
-      `Adresse de depot a utiliser: ${address}\n` +
-      `Reseau: ${tx.network}`
-  });
-  await sendEmail({
-    to: process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL || 'admin@bellaexchange.cg',
-    subject: `Nouvelle commande VENTE ${tx.id}`,
-    text:
-      `Nouvelle commande VENTE\n` +
-      `ID: ${tx.id}\n` +
-      `Client: ${tx.email}\n` +
-      `Telephone paiement client: ${tx.phone || '-'}\n` +
-      `Nom client: ${tx.senderName || '-'}\n` +
-      `Crypto: ${tx.crypto}/${tx.network}\n` +
-      `Montant: ${usdAmount} USD (${amountFCFA} FCFA)\n` +
-      `Adresse de depot: ${address}\n` +
-      `Preuve: ${tx.proofFileName || 'aucune'}`,
-    attachments: req.file ? [{
-      filename: req.file.originalname || `preuve-vente-${tx.id}`,
-      content: req.file.buffer,
-      contentType: req.file.mimetype || 'application/octet-stream'
-    }] : undefined
-  });
-  await sendTelegramMessage(
-    `🟠 <b>Nouvelle commande VENTE</b>\n` +
-    `ID: <code>${escapeTelegramHtml(tx.id)}</code>\n` +
-    `Client: ${escapeTelegramHtml(tx.email)}\n` +
-    `Tel paiement: ${escapeTelegramHtml(tx.phone || '-')}\n` +
-    `Nom client: ${escapeTelegramHtml(tx.senderName || '-')}\n` +
-    `Crypto: ${escapeTelegramHtml(tx.crypto)}/${escapeTelegramHtml(tx.network)}\n` +
-    `Montant: ${escapeTelegramHtml(usdAmount)} USD (${escapeTelegramHtml(amountFCFA)} FCFA)\n` +
-    `Depot: <code>${escapeTelegramHtml(address)}</code>`
-  );
-  await sendTelegramProof({
-    fileBuffer: req.file?.buffer,
-    fileName: req.file?.originalname,
-    mimeType: req.file?.mimetype,
-    caption: `Preuve VENTE ${tx.id}`
-  });
-
   res.redirect('/waiting');
+  runInBackground([
+    () => sendEmail({
+      to: tx.email,
+      subject: 'Bella Exchange - Vente en attente',
+      text:
+        `Votre ordre de vente ${tx.id} (${usdAmount} USD / ${amountFCFA} FCFA) a ete pris en compte et sera verifie par l'administration.\n` +
+        `Adresse de depot a utiliser: ${address}\n` +
+        `Reseau: ${tx.network}`
+    }),
+    () => sendEmail({
+      to: process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL || 'admin@bellaexchange.cg',
+      subject: `Nouvelle commande VENTE ${tx.id}`,
+      text:
+        `Nouvelle commande VENTE\n` +
+        `ID: ${tx.id}\n` +
+        `Client: ${tx.email}\n` +
+        `Telephone paiement client: ${tx.phone || '-'}\n` +
+        `Nom client: ${tx.senderName || '-'}\n` +
+        `Crypto: ${tx.crypto}/${tx.network}\n` +
+        `Montant: ${usdAmount} USD (${amountFCFA} FCFA)\n` +
+        `Adresse de depot: ${address}\n` +
+        `Preuve: ${tx.proofFileName || 'aucune'}`,
+      attachments: req.file ? [{
+        filename: req.file.originalname || `preuve-vente-${tx.id}`,
+        content: req.file.buffer,
+        contentType: req.file.mimetype || 'application/octet-stream'
+      }] : undefined
+    }),
+    () => sendTelegramMessage(
+      `🟠 <b>Nouvelle commande VENTE</b>\n` +
+      `ID: <code>${escapeTelegramHtml(tx.id)}</code>\n` +
+      `Client: ${escapeTelegramHtml(tx.email)}\n` +
+      `Tel paiement: ${escapeTelegramHtml(tx.phone || '-')}\n` +
+      `Nom client: ${escapeTelegramHtml(tx.senderName || '-')}\n` +
+      `Crypto: ${escapeTelegramHtml(tx.crypto)}/${escapeTelegramHtml(tx.network)}\n` +
+      `Montant: ${escapeTelegramHtml(usdAmount)} USD (${escapeTelegramHtml(amountFCFA)} FCFA)\n` +
+      `Depot: <code>${escapeTelegramHtml(address)}</code>`
+    ),
+    () => sendTelegramProof({
+      fileBuffer: req.file?.buffer,
+      fileName: req.file?.originalname,
+      mimeType: req.file?.mimetype,
+      caption: `Preuve VENTE ${tx.id}`
+    })
+  ], `sell:${tx.id}`);
 });
 
 app.post('/admin/transactions/:id/approve', adminRequired, async (req, res) => {
@@ -745,24 +762,25 @@ app.post('/admin/transactions/:id/approve', adminRequired, async (req, res) => {
   tx.updatedAt = new Date().toISOString();
   writeJSON('transactions.json', transactions);
 
-  await sendEmail({
-    to: tx.email,
-    subject: 'Bella Exchange - Transaction validee',
-    text: `Votre transaction ${tx.id} a ete validee avec succes.`
-  });
-  await sendEmail({
-    to: process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL || 'admin@bellaexchange.cg',
-    subject: `Transaction validee ${tx.id}`,
-    text: `Transaction validee\nID: ${tx.id}\nType: ${tx.type}\nClient: ${tx.email}`
-  });
-  await sendTelegramMessage(
-    `✅ <b>Transaction validée</b>\n` +
-    `ID: <code>${escapeTelegramHtml(tx.id)}</code>\n` +
-    `Type: ${escapeTelegramHtml(tx.type)}\n` +
-    `Client: ${escapeTelegramHtml(tx.email)}`
-  );
-
   res.redirect('/admin');
+  runInBackground([
+    () => sendEmail({
+      to: tx.email,
+      subject: 'Bella Exchange - Transaction validee',
+      text: `Votre transaction ${tx.id} a ete validee avec succes.`
+    }),
+    () => sendEmail({
+      to: process.env.ADMIN_NOTIFY_EMAIL || process.env.ADMIN_EMAIL || 'admin@bellaexchange.cg',
+      subject: `Transaction validee ${tx.id}`,
+      text: `Transaction validee\nID: ${tx.id}\nType: ${tx.type}\nClient: ${tx.email}`
+    }),
+    () => sendTelegramMessage(
+      `✅ <b>Transaction validée</b>\n` +
+      `ID: <code>${escapeTelegramHtml(tx.id)}</code>\n` +
+      `Type: ${escapeTelegramHtml(tx.type)}\n` +
+      `Client: ${escapeTelegramHtml(tx.email)}`
+    )
+  ], `approve:${tx.id}`);
 });
 
 app.post('/admin/settings', adminRequired, (req, res) => {
