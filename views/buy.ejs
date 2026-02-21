@@ -6,7 +6,7 @@
 
   <form method="POST" action="/transactions/buy" enctype="multipart/form-data" class="form-grid" id="buyForm">
     <label>Email
-      <input type="email" name="email" value="<%= currentUser.email %>" required />
+      <input type="email" name="email" value="<%= currentUser.email %>" readonly required />
     </label>
     <label>Crypto
       <select name="crypto" required>
@@ -36,7 +36,7 @@
     <h3>Details de paiement</h3>
     <p>Numero: <strong><%= settings.phoneNumber %></strong></p>
     <p>Nom beneficiaire: <strong><%= settings.recipientName %></strong></p>
-    <p>Le numero apparait apres saisie du montant en USD.</p>
+    <p>Veuillez bien copier le numéro et vérifier les détails avant de procéder au paiement.</p>
   </div>
 </section>
 <script>

@@ -57,6 +57,13 @@ function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
 }
 
+function escapeTelegramHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function isStrongPassword(password) {
   const value = String(password || '');
   return value.length >= 8 &&
@@ -424,8 +431,11 @@ app.post('/auth/forgot-password', async (req, res) => {
     });
     writeJSON('password_resets.json', resets);
 
-    const baseUrl = process.env.BASE_URL || `http://localhost:${port}`;
-    const resetLink = `${baseUrl}/reset-password?token=${token}`;
+    const rawBaseUrl = String(process.env.BASE_URL || `http://localhost:${port}`).trim();
+    const baseUrl = rawBaseUrl.endsWith('/') ? rawBaseUrl : `${rawBaseUrl}/`;
+    const resetUrl = new URL('reset-password', baseUrl);
+    resetUrl.searchParams.set('token', token);
+    const resetLink = resetUrl.toString();
     await sendEmail({
       to: user.email,
       subject: 'Bella Exchange - Reinitialisation mot de passe',
@@ -486,8 +496,20 @@ app.post('/auth/logout', (req, res) => {
 });
 
 app.post('/contact', (req, res) => {
+  const name = String(req.body.name || '').trim();
+  const email = normalizeEmail(req.body.email);
+  const message = String(req.body.message || '').trim();
+  if (!name || !email || !message) {
+    return res.redirect('/contact?error=Veuillez+remplir+tous+les+champs.');
+  }
   const messages = readJSON('messages.json', []);
-  messages.push({ id: uuidv4(), ...req.body, createdAt: new Date().toISOString() });
+  messages.push({
+    id: uuidv4(),
+    name,
+    email,
+    message,
+    createdAt: new Date().toISOString()
+  });
   writeJSON('messages.json', messages);
   res.redirect('/contact?ok=1');
 });
@@ -530,12 +552,15 @@ app.post('/transactions/buy', authRequired, upload.single('proof'), async (req, 
   if (!configuredAddress) {
     return res.redirect('/buy?error=Adresse+de+depot+non+configuree+pour+cette+crypto/reseau.');
   }
+  if (!req.file) {
+    return res.redirect('/buy?error=Veuillez+joindre+une+preuve+de+paiement.');
+  }
 
   const tx = {
     id: uuidv4(),
     type: 'buy',
     userId: user.id,
-    email: req.body.email || user.email,
+    email: user.email,
     phone: user.phone,
     crypto,
     network,
@@ -585,13 +610,13 @@ app.post('/transactions/buy', authRequired, upload.single('proof'), async (req, 
   });
   await sendTelegramMessage(
     `🟢 <b>Nouvelle commande ACHAT</b>\n` +
-    `ID: <code>${tx.id}</code>\n` +
-    `Client: ${tx.email}\n` +
-    `Tel client: ${tx.phone || '-'}\n` +
-    `Crypto: ${tx.crypto}/${tx.network}\n` +
-    `Montant: ${usdAmount} USD (${amountFCFA} FCFA)\n` +
-    `Adr. client: <code>${tx.cryptoAddress || '-'}</code>\n` +
-    `Paiement: ${settings.phoneNumber} (${settings.recipientName})`
+    `ID: <code>${escapeTelegramHtml(tx.id)}</code>\n` +
+    `Client: ${escapeTelegramHtml(tx.email)}\n` +
+    `Tel client: ${escapeTelegramHtml(tx.phone || '-')}\n` +
+    `Crypto: ${escapeTelegramHtml(tx.crypto)}/${escapeTelegramHtml(tx.network)}\n` +
+    `Montant: ${escapeTelegramHtml(usdAmount)} USD (${escapeTelegramHtml(amountFCFA)} FCFA)\n` +
+    `Adr. client: <code>${escapeTelegramHtml(tx.cryptoAddress || '-')}</code>\n` +
+    `Paiement: ${escapeTelegramHtml(settings.phoneNumber)} (${escapeTelegramHtml(settings.recipientName)})`
   );
   await sendTelegramProof({
     fileBuffer: req.file?.buffer,
@@ -621,6 +646,9 @@ app.post('/transactions/sell', authRequired, upload.single('proof'), async (req,
   const address = settings.depositAddresses?.[crypto]?.[network];
   if (!address) {
     return res.redirect('/sell?error=Adresse+de+depot+non+configuree+pour+cette+crypto/reseau.');
+  }
+  if (!req.file) {
+    return res.redirect('/sell?error=Veuillez+joindre+une+preuve+de+transfert.');
   }
 
   const tx = {
@@ -674,13 +702,13 @@ app.post('/transactions/sell', authRequired, upload.single('proof'), async (req,
   });
   await sendTelegramMessage(
     `🟠 <b>Nouvelle commande VENTE</b>\n` +
-    `ID: <code>${tx.id}</code>\n` +
-    `Client: ${tx.email}\n` +
-    `Tel paiement: ${tx.phone || '-'}\n` +
-    `Nom client: ${tx.senderName || '-'}\n` +
-    `Crypto: ${tx.crypto}/${tx.network}\n` +
-    `Montant: ${usdAmount} USD (${amountFCFA} FCFA)\n` +
-    `Depot: <code>${address}</code>`
+    `ID: <code>${escapeTelegramHtml(tx.id)}</code>\n` +
+    `Client: ${escapeTelegramHtml(tx.email)}\n` +
+    `Tel paiement: ${escapeTelegramHtml(tx.phone || '-')}\n` +
+    `Nom client: ${escapeTelegramHtml(tx.senderName || '-')}\n` +
+    `Crypto: ${escapeTelegramHtml(tx.crypto)}/${escapeTelegramHtml(tx.network)}\n` +
+    `Montant: ${escapeTelegramHtml(usdAmount)} USD (${escapeTelegramHtml(amountFCFA)} FCFA)\n` +
+    `Depot: <code>${escapeTelegramHtml(address)}</code>`
   );
   await sendTelegramProof({
     fileBuffer: req.file?.buffer,
@@ -713,9 +741,9 @@ app.post('/admin/transactions/:id/approve', adminRequired, async (req, res) => {
   });
   await sendTelegramMessage(
     `✅ <b>Transaction validée</b>\n` +
-    `ID: <code>${tx.id}</code>\n` +
-    `Type: ${tx.type}\n` +
-    `Client: ${tx.email}`
+    `ID: <code>${escapeTelegramHtml(tx.id)}</code>\n` +
+    `Type: ${escapeTelegramHtml(tx.type)}\n` +
+    `Client: ${escapeTelegramHtml(tx.email)}`
   );
 
   res.redirect('/admin');

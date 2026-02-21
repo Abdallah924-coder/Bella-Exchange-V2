@@ -8,7 +8,7 @@ async function sendTelegramMessage(message) {
 
   const url = `https://api.telegram.org/bot${token}/sendMessage`;
   try {
-    await fetch(url, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -17,6 +17,10 @@ async function sendTelegramMessage(message) {
         parse_mode: 'HTML'
       })
     });
+    if (!response.ok) {
+      const body = await response.text();
+      console.error('[TELEGRAM ERROR]', response.status, body);
+    }
   } catch (err) {
     console.error('[TELEGRAM ERROR]', err.message);
   }
@@ -42,7 +46,11 @@ async function sendTelegramProof({ fileBuffer, fileName, mimeType, caption }) {
     } else {
       form.append('document', new Blob([fileBuffer], { type: mimeType || 'application/octet-stream' }), fileName || 'proof.bin');
     }
-    await fetch(url, { method: 'POST', body: form });
+    const response = await fetch(url, { method: 'POST', body: form });
+    if (!response.ok) {
+      const body = await response.text();
+      console.error('[TELEGRAM FILE ERROR]', response.status, body);
+    }
   } catch (err) {
     console.error('[TELEGRAM FILE ERROR]', err.message);
   }

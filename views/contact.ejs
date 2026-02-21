@@ -2,6 +2,7 @@
 <section class="panel">
   <h1>Contact</h1>
   <% if (String((typeof query !== 'undefined' && query.ok) || '') === '1') { %><p class="ok">Message envoye.</p><% } %>
+  <% if (typeof query !== 'undefined' && query.error) { %><p class="error"><%= query.error %></p><% } %>
   <p>Besoin d'assistance ou d'informations commerciales ? Ecrivez-nous.</p>
   <form method="POST" action="/contact" class="form-grid">
     <label>Nom
