@@ -36,6 +36,7 @@ Renseigne les variables SMTP dans `.env`:
 - `SMTP_PORT`
 - `SMTP_USER`
 - `SMTP_PASS`
+- `SMTP_DISABLED` (`true` pour desactiver l'envoi reel et passer en mode mock)
 - `SMTP_SECURE` (`true` pour 465, sinon `false`)
 - `SMTP_REQUIRE_TLS`
 - `SMTP_FROM`

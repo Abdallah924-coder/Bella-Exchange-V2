@@ -5,7 +5,8 @@ let transporter;
 function createTransporter() {
   if (transporter) return transporter;
   const host = process.env.SMTP_HOST;
-  if (!host) {
+  const emailDisabled = String(process.env.SMTP_DISABLED || 'false') === 'true';
+  if (emailDisabled || !host) {
     return null;
   }
 

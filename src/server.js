@@ -8,6 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const { readJSON, writeJSON, ensureFile, initializeDataStore } = require('./db');
 const { sendEmail } = require('./mailer');
 const { sendTelegramMessage, sendTelegramProof } = require('./telegram');
+const { createSessionStore } = require('./session-store');
 require('dotenv').config();
 
 const app = express();
@@ -82,6 +83,7 @@ ensureFile('users.json', []);
 ensureFile('transactions.json', []);
 ensureFile('messages.json', []);
 ensureFile('password_resets.json', []);
+ensureFile('sessions.json', {});
 ensureFile('settings.json', {
   buyRate: 635,
   sellRate: 590,
@@ -252,6 +254,7 @@ app.set('views', path.join(__dirname, '..', 'views'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(session({
+  store: createSessionStore({ ttlMs: 1000 * 60 * 60 * 24 }),
   name: 'bella.sid',
   secret: process.env.SESSION_SECRET || 'bella_exchange_secret',
   resave: false,
